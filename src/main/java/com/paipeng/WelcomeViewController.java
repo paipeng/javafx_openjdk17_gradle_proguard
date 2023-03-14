@@ -22,7 +22,7 @@ import java.util.ResourceBundle;
 public class WelcomeViewController implements Initializable {
     public static Logger logger = LoggerFactory.getLogger(WelcomeViewController.class);
     private static Stage stage;
-    private static final String FXML_FILE = "/fxml/WelcomeViewController.fxml";
+    private static final String FXML_FILE = "/com/paipeng/WelcomeViewController.fxml";
     private  static ResourceBundle resources;
     public Image backgroundImage;
     @FXML
@@ -38,18 +38,23 @@ public class WelcomeViewController implements Initializable {
     public static void start() {
         try {
             //resources = ResourceBundle.getBundle("bundles.languages", CommonUtils.getCurrentLanguageLocale());
-            Parent root = FXMLLoader.load(WelcomeViewController.class.getResource(FXML_FILE));
+            URL location = WelcomeViewController.class.getResource(FXML_FILE);
+            if (location != null) {
+                Parent root = FXMLLoader.load(location);
+                Scene scene = new Scene(root);
+                stage = new Stage();
+                stage.initStyle(StageStyle.UNDECORATED);
+                //stage.setTitle(resources.getString("s2icodePrintTitle"));
+                stage.setScene(scene);
+                stage.centerOnScreen();
+                stage.setResizable(true);
+                stage.show();
 
-            Scene scene = new Scene(root);
-            stage = new Stage();
-            stage.initStyle(StageStyle.UNDECORATED);
-            //stage.setTitle(resources.getString("s2icodePrintTitle"));
-            stage.setScene(scene);
-            stage.centerOnScreen();
-            stage.setResizable(true);
-            stage.show();
+            } else {
+
+            }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            logger.error(ex.getMessage());
         }
     }
 

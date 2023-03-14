@@ -14,9 +14,15 @@ plugins {
     id 'org.openjfx.javafxplugin' version '0.0.13'
 }
 
-group 'org.example'
-version '1.0-SNAPSHOT'
+group 'com.paipeng'
+version '1.0.0'
 
+sourceCompatibility = '17'
+targetCompatibility = '17'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
 
 repositories {
     mavenCentral()
@@ -39,6 +45,10 @@ javafx {
 
 }
 
+application {
+    mainModule = 'com.paipeng'
+    mainClass = 'com.paipeng.JavaFXApp'
+}
 
 task ('proguard', type: proguard.gradle.ProGuardTask) {
 
@@ -187,4 +197,8 @@ task ('proguard', type: proguard.gradle.ProGuardTask) {
     keepclassmembers 'class * {\
         @javafx.fxml.FXML *;\
     }'
+}
+
+test {
+    useJUnitPlatform()
 }
