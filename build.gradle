@@ -12,6 +12,7 @@ buildscript {
 plugins {
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.0.13'
+    id 'org.beryx.runtime' version '1.13.0'
 }
 
 group 'com.paipeng'
@@ -79,7 +80,7 @@ def fatJarInputFile = 'build/libs/JavaFXApp-' + project.version.toString() + '.j
 def proguardOutputFile = 'out/obfuscated/JavaFXApp-' + project.version.toString() + '.jar'
 
 // for more details, see: http://proguard.sourceforge.net/manual/gradle.html
-task proguard(type: proguard.gradle.ProGuardTask) {
+task proguard(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
 
     // make all runtime-dependencies available while obfruscating
     //configurations.runtime.resolve().each {
@@ -122,4 +123,133 @@ task cleanAfterProguard(type: Delete, dependsOn: proguard) {
 task unpackProguardOutput (type: Copy, dependsOn: cleanAfterProguard) {
     from zipTree("${buildDir}/proguard/output.jar")
     into file("${buildDir}/classes/java/main")
+}
+/*
+jar {
+    dependsOn 'cleanAfterProguard'
+    manifest {
+        attributes(
+                'Main-Class': 'com.paipeng.JavaFXApp'
+        )
+    }
+    from zipTree("${buildDir}/proguard/output.jar")
+}
+
+ */
+
+application {
+    mainClass = 'com.paipeng.JavaFXApp'
+}
+
+run {
+    //jvmArgs = ['-Djdk.gtk.version=2']
+    jvmArgs = ['-Djdk.gtk.version=2', '--add-exports', 'javafx.graphics/com.sun.javafx.tk=ALL-UNNAMED',
+               '--add-exports', 'javafx.graphics/com.sun.javafx.font=ALL-UNNAMED']
+}
+description = "The Application is for printing serialized labels or idcard."
+
+// Runtime for non-modular projects
+runtime {
+    // Some default options
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    // '--add-exports javafx.graphics/com.sun.javafx.tk=ALL-UNNAMED', '--add-exports javafx.graphics/com.sun.javafx.font=ALL-UNNAMED'
+    // The modules !
+    modules = ['javafx.media', 'javafx.base', 'javafx.swing', 'javafx.controls', 'javafx.graphics',
+               'javafx.fxml', 'java.sql'
+    ]
+    launcher{
+        noConsole = false
+    }
+    // Pack it!
+    jpackage {
+        // Could be taken from command line, here it is defined statically
+        // project.findProperty('installerOs')
+        //    (example: -PinstallerOs=mac)
+        targetPlatformName = 'mac'
+        // The app name
+        imageName = 'IdLabelPrinting'
+        jvmArgs = ['-Djdk.gtk.version=2', '--add-exports', 'javafx.graphics/com.sun.javafx.tk=ALL-UNNAMED',
+                   '--add-exports', 'javafx.graphics/com.sun.javafx.font=ALL-UNNAMED',
+                   '--add-modules=javafx.controls,javafx.swing,javafx.media,javafx.graphics,javafx.fxml'
+        ]
+        // Resource directory for native package overrides,
+        // you can do lots of magic here too...
+        resourceDir = file('package/')
+        if (targetPlatformName == 'mac') {
+            targetPlatform("mac") {
+                // Use downloaded Bellsoft Liberica JDK with JavaFX bundled!
+                //jdkHome = '/Users/paipeng/Library/Java/JavaVirtualMachines/openjdk-17/Contents/Home'
+                jdkHome = '/opt/jdk-17.0.6.jdk'
+
+                // We also could directly download a JDK
+                //jdkHome = jdkDownload("https://download.java.net/java/GA/jdk17.0.1/2a2082e5a09d4267845be086888add4f/12/GPL/openjdk-17.0.1_macos-x64_bin.tar.gz")
+            }
+            installerType = 'pkg'
+        }
+        if (targetPlatformName == 'win') {
+            targetPlatform("win") {
+                jdkHome = 'E:/jdk-17.0.6'
+            }
+            installerType = 'exe'
+        }
+        if (targetPlatformName == 'linux') {
+            targetPlatform("linux") {
+            }
+            installerType = 'deb'
+        }
+        // Add jpackage-specific options
+        installerOptions = [
+                '--name', 'JavaFXApp', // installer name
+                '--description', project.description,
+                '--copyright', 'Copyright 2023 PaiPeng',
+                '--vendor', 'PaiPeng'
+        ]
+        // We also could take the installer type from comand line
+        // installerType = project.findProperty('installerType')
+        // We would pass this from the command line
+        //    (example: -PinstallerType=msi)
+        if (installerType == 'pkg') {
+            imageOptions += ['--icon', 'src/main/resources/icon.icns']
+            installerOptions += [
+                    '--license-file', 'package/LICENSE-OS-Installer.txt'
+            ]
+        }
+        if (installerType == 'exe') {
+            imageOptions += ['--icon', 'src/main/resources/idcard-logo.ico']
+            installerOptions += [
+                    '--win-per-user-install', // Install only for current user
+                    '--win-console', // Shows what Java outputs to the console
+                    '--win-dir-chooser',
+                    '--win-menu',
+                    '--win-shortcut'
+            ]
+        }
+        if (installerType in ['deb', 'rpm']) {
+            imageOptions += ['--icon', 'src/main/resources/images/icon.png']
+            installerOptions += [
+                    '--linux-menu-group', 'Utility',
+                    '--linux-shortcut'
+            ]
+        }
+        if (installerType == 'deb') {
+            installerOptions += [
+                    '--linux-deb-maintainer', 'sipaipv6@gmail.com'
+            ]
+        }
+        if (installerType == 'rpm') {
+            installerOptions += [
+                    '--linux-rpm-license-type', 'GPLv3'
+            ]
+        }
+    }
+}
+
+jpackage {
+    // Could be used for pre-checks;
+    // e.g., are certain command line arguments defined?
+    doFirst {
+        // project.findProperty('installerOs')
+        //    (example: -PinstallerOs=mac)
+        // project.getProperty('installerType') // throws exception if its missing
+    }
 }
