@@ -111,6 +111,15 @@ task proguard(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
     configuration 'proguard.prog'
     //configuration 'proguard.pro'
 
+    doLast {
+        println 'proguard doLast'
+        delete("$fatJarInputFile")
+
+        copy {
+            from("$proguardOutputFile")
+            into("${project.buildDir.absolutePath}/libs/")
+        }
+    }
 }
 
 // 2.3 Clean after proguard task
@@ -248,11 +257,20 @@ task copyJar(type: Copy) {
     //into 'build/install/JavaFXApp/lib'
     into 'build/libs'
 }
-jpackage {
-    dependsOn("proguard")
-    dependsOn("copyJar")
 
-    proguard.finalizedBy copyJar
+/**
+ * Hook for obfuscating. Configures installDist to
+ * depend on obfuscate.
+ */
+
+tasks.installDist {
+    dependsOn("proguard")
+    //dependsOn("copyJar")
+    //proguard.finalizedBy copyJar
+}
+
+jpackage {
+
     // Could be used for pre-checks;
     // e.g., are certain command line arguments defined?
     doFirst {
