@@ -243,8 +243,16 @@ runtime {
         }
     }
 }
-
+task copyJar(type: Copy) {
+    from proguardOutputFile
+    //into 'build/install/JavaFXApp/lib'
+    into 'build/libs'
+}
 jpackage {
+    dependsOn("proguard")
+    dependsOn("copyJar")
+
+    proguard.finalizedBy copyJar
     // Could be used for pre-checks;
     // e.g., are certain command line arguments defined?
     doFirst {
